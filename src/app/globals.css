@@ -49,9 +49,9 @@
   --color-danger:       oklch(0.55 0.18 28);
 
   /* Fonts */
-  --font-display:       var(--font-caveat);
+  --font-display:       var(--font-manrope);
   --font-mono:          var(--font-space-mono);
-  --font-sans:          var(--font-space-mono);
+  --font-sans:          var(--font-manrope);
 
   /* Radius */
   --radius-xs: 0.25rem;

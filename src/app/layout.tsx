@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Caveat, Space_Mono } from "next/font/google";
+import { Manrope, Space_Mono } from "next/font/google";
 import "./globals.css";
 
-// Display — handwritten variable serif, used only for track titles.
-const caveat = Caveat({
-  variable: "--font-caveat",
+// Display — variable humanist sans, used for track titles. Tight, warm,
+// pairs cleanly with Space Mono chrome.
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
   display: "swap",
   weight: "variable",
@@ -35,7 +36,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${caveat.variable} ${spaceMono.variable}`}>
+    <html lang="en" className={`${manrope.variable} ${spaceMono.variable}`}>
       <body className="antialiased">{children}</body>
     </html>
   );

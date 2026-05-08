@@ -1,18 +1,14 @@
 "use client";
 import { seek } from "@/lib/player/controller";
 import { usePlayerStore } from "@/lib/player/store";
-import { formatPlays } from "@/lib/util/format";
 import { formatTime } from "@/lib/util/time";
 import Image from "next/image";
 import * as React from "react";
 import { UploadGate } from "./UploadGate";
 
 /**
- * Hero stack:
- *   1. Album art — large square, sleeve-elevated
- *   2. Waveform display — an INSET window in the cream surface, with a
- *      tick scale at the top (time labels), the wave traced in dark ink,
- *      and an apple-liquid-glass knob as the seek handle
+ * Hero stack: album art + title/artist header → recessed display window
+ * → KEY/BPM split below it.
  */
 export function Stage() {
   const track = usePlayerStore((s) => s.track);
@@ -20,89 +16,74 @@ export function Stage() {
   const duration = usePlayerStore((s) => s.duration);
 
   const title = track?.title ?? "Awaiting upload";
-  const artist = track?.artist ?? "—";
-  const albumLine = track
-    ? [track.album, track.year && `LP-${track.year}`].filter(Boolean).join(" · ")
-    : "Drop a song to begin";
+  const artist = track?.artist ?? "Drop a song to begin";
   const keyValue = track?.key ?? "—";
   const bpmValue = track?.bpm ? String(Math.round(track.bpm)) : "—";
-  const playsValue = track?.plays ? formatPlays(track.plays) : "—";
 
   return (
-    <section aria-label="Now playing" className="flex flex-col gap-5">
-      {/* Album / upload region */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-2xl shadow-sleeve">
-        {track?.artworkUrl ? (
-          <Image
-            src={track.artworkUrl}
-            alt={`${track.album} — cover`}
-            fill
-            sizes="(max-width: 480px) 100vw, 440px"
-            className="object-cover"
-            unoptimized
-            priority
-          />
-        ) : track ? (
-          <div className="grid h-full w-full place-items-center bg-paper-warm">
-            <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-ink-soft">
-              No artwork
-            </span>
-          </div>
-        ) : (
-          <UploadGate />
-        )}
+    <section aria-label="Now playing" className="flex flex-col flex-grow gap-5">
+      <div className="flex flex-col flex-grow align-items-center justify-center">
+        {/* Album / upload region */}
+        <div className="relative aspect-square w-full overflow-hidden rounded-2xl shadow-sleeve">
+          {track?.artworkUrl ? (
+            <Image
+              src={track.artworkUrl}
+              alt={`${track.album} — cover`}
+              fill
+              sizes="(max-width: 480px) 100vw, 440px"
+              className="object-cover"
+              unoptimized
+              priority
+            />
+          ) : track ? (
+            <div className="grid h-full w-full place-items-center bg-paper-warm">
+              <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-ink-soft">
+                No artwork
+              </span>
+            </div>
+          ) : (
+            <UploadGate />
+          )}
+        </div>
       </div>
 
-      {/* Track info header — title + artist/album on the left, plays + KEY/BPM
-          on the right. Mirrors the layout above the display in the reference mock. */}
-      <header className="flex flex-col gap-2.5">
-        <div className="flex items-start justify-between gap-4">
-          <h1 className="min-w-0 flex-1 truncate font-display text-[2.25rem] leading-[1.05] text-ink">
+      <div className="flex flex-col justify-self-end gap-5">
+        {/* Title + artist */}
+        <header className="flex flex-col gap-1.5">
+          <h1 className="truncate font-display text-[1.875rem] font-bold leading-[1.1] tracking-[-0.02em] text-ink">
             {title}
           </h1>
-          <div className="shrink-0 text-right">
-            <p className="font-mono text-[9px] uppercase tracking-[0.20em] text-ink-soft">
-              Number of plays
-            </p>
-            <p className="mt-0.5 font-mono text-[1.4rem] font-bold leading-none text-accent">
-              {playsValue}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-end justify-between gap-4">
-          <div className="min-w-0 flex-1 space-y-0.5">
-            <p className="truncate font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ink">
-              {artist}
-            </p>
-            <p className="truncate font-mono text-[10px] uppercase tracking-[0.22em] italic text-ink-soft">
-              {albumLine}
-            </p>
-          </div>
-          <p className="shrink-0 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-soft">
-            <span>Key</span>{" "}
-            <span className="font-bold text-ink">{keyValue}</span>
-            <span aria-hidden className="mx-1.5 text-ink-soft/40">
-              |
-            </span>
-            <span>BPM</span>{" "}
-            <span className="font-bold text-ink">{bpmValue}</span>
+          <p className="truncate font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ink-soft">
+            {artist}
           </p>
-        </div>
-      </header>
+        </header>
 
-      {/* The inset display window — recessed glass holding ticks, wave, knob */}
-      <div className="display-inset display-sheen rounded-md px-4 pt-3 pb-2">
-        <TickScale duration={duration} />
-        <SeekArea
-          duration={duration}
-          currentTime={currentTime}
-          disabled={!track}
-          onSeek={seek}
-        />
+        {/* The inset display window — recessed glass holding ticks, wave, knob */}
+        <div className="display-inset display-sheen rounded-md px-4 pt-3 pb-2">
+          <TickScale duration={duration} />
+          <SeekArea
+            duration={duration}
+            currentTime={currentTime}
+            disabled={!track}
+            onSeek={seek}
+          />
+        </div>
+
+        {/* KEY (left) + BPM (right), sitting below the display */}
+        <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.20em] text-ink-soft">
+          <span>
+            Key <span className="font-bold text-ink">{keyValue}</span>
+          </span>
+          <span>
+            BPM <span className="font-bold text-ink">{bpmValue}</span>
+          </span>
+        </div>
       </div>
     </section>
   );
 }
+
+/* ─────────────────────────── internals ─────────────────────────── */
 
 /**
  * Tick scale at the top of the display — major ticks at 0/25/50/75/100% with
@@ -156,7 +137,6 @@ function TickScale({ duration }: { duration: number }) {
         className="block h-3 w-full"
         aria-hidden
       >
-        {/* Baseline */}
         <line
           x1="0"
           y1="11"
@@ -165,7 +145,6 @@ function TickScale({ duration }: { duration: number }) {
           stroke="var(--color-window-tick)"
           strokeWidth="0.5"
         />
-        {/* Minor ticks */}
         {minors.map((f) => (
           <line
             key={f}
@@ -177,7 +156,6 @@ function TickScale({ duration }: { duration: number }) {
             strokeWidth="0.5"
           />
         ))}
-        {/* Major ticks — taller, stronger */}
         {majors.map((m) => (
           <line
             key={m.fraction}
@@ -202,10 +180,6 @@ interface SeekAreaProps {
   onSeek: (s: number) => void;
 }
 
-/**
- * The wave + glass knob layer. The whole strip is the seek surface; the
- * knob is purely decorative (positioned via fraction).
- */
 function SeekArea({ duration, currentTime, disabled, onSeek }: SeekAreaProps) {
   const wrapRef = React.useRef<HTMLDivElement>(null);
   const dragRef = React.useRef(false);
@@ -253,14 +227,12 @@ function SeekArea({ duration, currentTime, disabled, onSeek }: SeekAreaProps) {
         e.currentTarget.releasePointerCapture(e.pointerId);
       }}
     >
-      {/* Center baseline */}
       <div
         aria-hidden
         className="absolute inset-x-0 top-1/2 h-px"
         style={{ background: "var(--color-window-tick)" }}
       />
 
-      {/* Wave path — kept as-is, drawn in dark ink */}
       <svg
         aria-hidden
         viewBox="0 0 200 56"
@@ -278,9 +250,7 @@ function SeekArea({ duration, currentTime, disabled, onSeek }: SeekAreaProps) {
         />
       </svg>
 
-      {/* Glass knob — apple liquid-glass slider with red playhead line.
-          Sized to match the reference mock: roughly square, with the knob
-          slightly taller than the wave region so it lifts off the surface. */}
+      {/* Glass knob — apple liquid-glass slider with red playhead line */}
       <div
         aria-hidden
         className="glass-knob absolute rounded-[10px]"
@@ -301,9 +271,5 @@ function SeekArea({ duration, currentTime, disabled, onSeek }: SeekAreaProps) {
   );
 }
 
-/**
- * Hand-tuned static waveform path — gentle peaks over a baseline.
- * 200×56 viewBox to match the compressed wave area height.
- */
 const STATIC_WAVE =
   "M0,32 C6,30 10,22 16,22 C22,22 24,28 30,25 C36,22 38,14 44,12 C50,10 54,20 60,18 C66,16 70,8 76,5 C82,2 86,14 92,14 C98,14 102,20 108,17 C114,14 118,5 124,4 C130,3 134,12 140,14 C146,16 150,8 156,10 C162,12 166,20 172,20 C178,20 182,14 188,17 C194,20 198,28 200,30";
