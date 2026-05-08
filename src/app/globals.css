@@ -45,6 +45,10 @@
   /* Playhead — thin red line through the center of the glass knob */
   --color-playhead:     oklch(0.56 0.215 25);
 
+  /* LED — bright green indicator above the play knob */
+  --color-led:          oklch(0.80 0.210 142);
+  --color-led-dim:      oklch(0.55 0.090 142);
+
   /* States */
   --color-danger:       oklch(0.55 0.18 28);
 
@@ -71,8 +75,15 @@
   --shadow-sleeve: 0 1px 0 oklch(1 0 0 / 0.5) inset,
     0 6px 16px -8px oklch(0.20 0.04 50 / 0.18),
     0 24px 48px -16px oklch(0.20 0.04 50 / 0.16);
-  --shadow-soft: 0 2px 8px -4px oklch(0.20 0.04 50 / 0.10),
-    0 8px 24px -12px oklch(0.20 0.04 50 / 0.10);
+
+  --shadow-soft: 0 1px 0 oklch(1 0 0 / 0.6) inset,
+    0 8px 20px -8px oklch(0.20 0.04 50 / 0.4),
+    0 28px 48px -16px oklch(0.20 0.04 50 / 0.16);
+
+  --shadow-soft-raised: 0 1px 0 oklch(1 0 0 / 0.6) inset,
+    0 10px 24px -8px oklch(0.20 0.04 50 / 0.2),
+    0 28px 48px -16px oklch(0.20 0.04 50 / 0.16);
+
   --shadow-pressed: inset 0 1px 2px oklch(0.20 0.04 50 / 0.10);
 }
 
@@ -159,6 +170,38 @@
   }
   .shadow-soft {
     box-shadow: var(--shadow-soft);
+  }
+  .shadow-soft-raised {
+    box-shadow: var(--shadow-soft-raised);
+  }
+
+  /* Vintage-radio knob surface — soft cream gradient body + thin concentric
+     ring inset from the outer edge. The OUTER ring (::after) is a separate
+     dark line drawn around the knob and is the rail the LED chip sits on. */
+  .knob {
+    background: linear-gradient(
+      180deg,
+      oklch(0.96 0.018 86) 0%,
+      oklch(0.92 0.022 82) 50%,
+      oklch(0.86 0.030 80) 100%
+    );
+  }
+  /* Inner concentric ring — subtle detail just inside the knob's edge */
+  .knob::before {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border-radius: 9999px;
+    border: 1px solid oklch(0.20 0.02 50 / 0.18);
+    pointer-events: none;
+  }
+  .knob:hover {
+    background: linear-gradient(
+      180deg,
+      oklch(0.97 0.016 88) 0%,
+      oklch(0.93 0.020 83) 50%,
+      oklch(0.88 0.028 81) 100%
+    );
   }
 
   /* Display window — inset INTO the cream surface. Stronger top shadow,

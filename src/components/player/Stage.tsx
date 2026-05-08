@@ -50,7 +50,7 @@ export function Stage() {
       <div className="flex flex-col justify-self-end gap-5">
         {/* Title + artist */}
         <header className="flex flex-col gap-1.5">
-          <h1 className="truncate font-display text-[1.875rem] font-bold leading-[1.1] tracking-[-0.02em] text-ink">
+          <h1 className="truncate font-display h-10 text-[1.75rem] font-bold leading-[1.1] tracking-[-0.02em] text-ink">
             {title}
           </h1>
           <p className="truncate font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ink-soft">
