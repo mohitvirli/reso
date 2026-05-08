@@ -4,6 +4,7 @@ import { usePlayerStore } from "@/lib/player/store";
 import { formatTime } from "@/lib/util/time";
 import Image from "next/image";
 import * as React from "react";
+import { LiveWave } from "./LiveWave";
 import { UploadGate } from "./UploadGate";
 
 /**
@@ -14,6 +15,7 @@ export function Stage() {
   const track = usePlayerStore((s) => s.track);
   const currentTime = usePlayerStore((s) => s.currentTime);
   const duration = usePlayerStore((s) => s.duration);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
 
   const title = track?.title ?? "Awaiting upload";
   const artist = track?.artist ?? "Drop a song to begin";
@@ -64,6 +66,7 @@ export function Stage() {
           <SeekArea
             duration={duration}
             currentTime={currentTime}
+            isPlaying={isPlaying}
             disabled={!track}
             onSeek={seek}
           />
@@ -176,11 +179,18 @@ function TickScale({ duration }: { duration: number }) {
 interface SeekAreaProps {
   duration: number;
   currentTime: number;
+  isPlaying: boolean;
   disabled: boolean;
   onSeek: (s: number) => void;
 }
 
-function SeekArea({ duration, currentTime, disabled, onSeek }: SeekAreaProps) {
+function SeekArea({
+  duration,
+  currentTime,
+  isPlaying,
+  disabled,
+  onSeek,
+}: SeekAreaProps) {
   const wrapRef = React.useRef<HTMLDivElement>(null);
   const dragRef = React.useRef(false);
 
@@ -227,28 +237,14 @@ function SeekArea({ duration, currentTime, disabled, onSeek }: SeekAreaProps) {
         e.currentTarget.releasePointerCapture(e.pointerId);
       }}
     >
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-1/2 h-px"
-        style={{ background: "var(--color-window-tick)" }}
-      />
-
-      <svg
-        aria-hidden
-        viewBox="0 0 200 56"
-        preserveAspectRatio="none"
+      {/* Real-time audio-reactive ribbon — bass on the left, highs near the
+          playhead, calm on the right. Anchors to baseline at the playhead so
+          the line flows cleanly through the centre of the glass knob. */}
+      <LiveWave
+        duration={duration}
+        isPlaying={isPlaying}
         className="absolute inset-0 h-full w-full"
-      >
-        <path
-          d={STATIC_WAVE}
-          fill="none"
-          stroke="var(--color-ink)"
-          strokeOpacity="0.78"
-          strokeWidth="1.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+      />
 
       {/* Glass knob — apple liquid-glass slider with red playhead line */}
       <div
@@ -271,5 +267,3 @@ function SeekArea({ duration, currentTime, disabled, onSeek }: SeekAreaProps) {
   );
 }
 
-const STATIC_WAVE =
-  "M0,32 C6,30 10,22 16,22 C22,22 24,28 30,25 C36,22 38,14 44,12 C50,10 54,20 60,18 C66,16 70,8 76,5 C82,2 86,14 92,14 C98,14 102,20 108,17 C114,14 118,5 124,4 C130,3 134,12 140,14 C146,16 150,8 156,10 C162,12 166,20 172,20 C178,20 182,14 188,17 C194,20 198,28 200,30";
