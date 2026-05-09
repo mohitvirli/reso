@@ -2,6 +2,7 @@
 import { seek } from "@/lib/player/controller";
 import { usePlayerStore } from "@/lib/player/store";
 import { formatTime } from "@/lib/util/time";
+import { Replace } from "lucide-react";
 import Image from "next/image";
 import * as React from "react";
 import { LiveWave } from "./LiveWave";
@@ -16,6 +17,8 @@ export function Stage() {
   const currentTime = usePlayerStore((s) => s.currentTime);
   const duration = usePlayerStore((s) => s.duration);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const swapMode = usePlayerStore((s) => s.swapMode);
+  const setSwapMode = usePlayerStore((s) => s.setSwapMode);
 
   const title = track?.title ?? "Awaiting upload";
   const artist = track?.artist ?? "Drop a song to begin";
@@ -27,24 +30,39 @@ export function Stage() {
       <div className="flex flex-col flex-grow align-items-center justify-center">
         {/* Album / upload region */}
         <div className="relative aspect-square w-full overflow-hidden rounded-2xl shadow-sleeve">
-          {track?.artworkUrl ? (
-            <Image
-              src={track.artworkUrl}
-              alt={`${track.album} — cover`}
-              fill
-              sizes="(max-width: 480px) 100vw, 440px"
-              className="object-cover"
-              unoptimized
-              priority
+          {!track || swapMode ? (
+            <UploadGate
+              onCancel={track ? () => setSwapMode(false) : undefined}
             />
-          ) : track ? (
-            <div className="grid h-full w-full place-items-center bg-paper-warm">
-              <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-ink-soft">
-                No artwork
-              </span>
-            </div>
           ) : (
-            <UploadGate />
+            <>
+              {track.artworkUrl ? (
+                <Image
+                  src={track.artworkUrl}
+                  alt={`${track.album} — cover`}
+                  fill
+                  sizes="(max-width: 480px) 100vw, 440px"
+                  className="object-cover"
+                  unoptimized
+                  priority
+                />
+              ) : (
+                <div className="grid h-full w-full place-items-center bg-paper-warm">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-ink-soft">
+                    No artwork
+                  </span>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setSwapMode(true)}
+                aria-label="Swap track"
+                title="Swap track"
+                className="absolute top-3 right-3 z-10 grid size-9 cursor-pointer place-items-center rounded-full border border-line bg-paper/80 text-ink shadow-soft backdrop-blur transition-colors hover:bg-paper"
+              >
+                <Replace className="size-4" strokeWidth={1.6} />
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -55,7 +73,7 @@ export function Stage() {
           <h1 className="truncate font-display h-10 text-[1.75rem] font-bold leading-[1.1] tracking-[-0.02em] text-ink">
             {title}
           </h1>
-          <p className="truncate font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ink-soft">
+          <p className="truncate font-mono text-[12px] font-bold uppercase tracking-[0.22em] text-ink-soft">
             {artist}
           </p>
         </header>

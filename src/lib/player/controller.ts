@@ -102,6 +102,7 @@ export async function loadFile(file: File): Promise<void> {
     };
 
     usePlayerStore.getState().setTrack(track);
+    usePlayerStore.setState({ swapMode: false });
 
     const engine = getEngine();
     await engine.load(file);
