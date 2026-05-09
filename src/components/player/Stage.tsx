@@ -73,7 +73,7 @@ export function Stage() {
           <h1 className="truncate font-display h-10 text-[1.75rem] font-bold leading-[1.1] tracking-[-0.02em] text-ink">
             {title}
           </h1>
-          <p className="truncate font-mono text-[12px] font-bold uppercase tracking-[0.22em] text-ink-soft">
+          <p className="truncate font-mono text-[14px] font-bold uppercase tracking-[0.22em] text-ink-soft">
             {artist}
           </p>
         </header>
