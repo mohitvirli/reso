@@ -198,7 +198,7 @@ export function UploadGate({ onCancel }: UploadGateProps = {}) {
           <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-ink">
             {isLoading ? "Reading file…" : "Drop a song"}
           </p>
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-soft">
+          <p className="font-mono mt-4 text-[10px] uppercase tracking-[0.18em] text-ink-soft">
             {isLoading ? "Hold tight" : "or"}
           </p>
         </div>
