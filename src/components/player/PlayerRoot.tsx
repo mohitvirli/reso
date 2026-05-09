@@ -3,6 +3,7 @@ import { wireEngineListeners } from "@/lib/player/controller";
 import * as React from "react";
 import { Stage } from "./Stage";
 import { Transport } from "./Transport";
+import { TweaksMenu } from "./TweaksMenu";
 
 /**
  * Single client root for the player. Wires the audio engine listeners on
@@ -22,6 +23,7 @@ export function PlayerRoot() {
         <Transport />
         {/* <TrackInfo /> */}
       </main>
+      <TweaksMenu />
     </div>
   );
 }

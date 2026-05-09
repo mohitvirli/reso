@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
 import { getEngine } from "@/lib/audio/engine";
+import { BAND_HZ, useTuning } from "@/lib/player/tuning";
 
 /**
  * Real-time audio-reactive ribbon — Trap-Nation-style. A single canvas
@@ -23,41 +24,9 @@ import { getEngine } from "@/lib/audio/engine";
  * across ~96 control points keep the ribbon feeling analog and luxurious.
  */
 
-interface Band {
-  lo: number;
-  hi: number;
-  /** Spatial centre within the active region (0 = playhead-far, 1 = playhead) */
-  cx: number;
-  spread: number;
-  gain: number;
-  /** dB at which this band's normalized level is 0 (silence floor) */
-  minDb: number;
-  /** dB at which this band's normalized level is 1 (loud ceiling) */
-  maxDb: number;
-}
-
-// Per-band dB ranges compensate for music's natural energy distribution:
-// bass sits -50→-8, highs sit -68→-25. Equal NORM across bands → all read.
-const BANDS: Band[] = [
-  // Bass — far left, big slow swells
-  { lo: 20, hi: 150, cx: 0.15, spread: 0.22, gain: 1.0, minDb: -55, maxDb: -10 },
-  // Low-mid — left-of-centre, broad
-  { lo: 150, hi: 600, cx: 0.4, spread: 0.22, gain: 1.2, minDb: -60, maxDb: -15 },
-  // Upper-mid — centre to right, smoother
-  { lo: 600, hi: 2500, cx: 0.65, spread: 0.2, gain: 1.5, minDb: -65, maxDb: -20 },
-  // Highs — right edge near the playhead, fine ripples
-  { lo: 2500, hi: 9000, cx: 0.88, spread: 0.16, gain: 1.9, minDb: -68, maxDb: -25 },
-];
-
+// Static — band Hz ranges live in tuning module. Visual params (cx, spread,
+// gain, dB ranges, easing, flow, chirp endpoints) all read from useTuning.
 const POINT_COUNT = 192;
-const ATTACK = 0.45;
-const RELEASE = 0.1;
-const FLOW_SPEED = 0.045;
-
-// Chirp endpoints — log-interp spatial frequency across the active region.
-// Low (slow) on the left for bass, high (fast) near the playhead for highs.
-const SPATIAL_FREQ_LEFT = 1.2;
-const SPATIAL_FREQ_RIGHT = 18;
 
 export interface LiveWaveProps {
   duration: number;
@@ -69,7 +38,7 @@ export function LiveWave({ duration, isPlaying, className }: LiveWaveProps) {
   const wrapRef = React.useRef<HTMLDivElement | null>(null);
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const bandLevelsRef = React.useRef<Float32Array>(
-    new Float32Array(BANDS.length)
+    new Float32Array(BAND_HZ.length)
   );
   const flowRef = React.useRef(0);
 
@@ -96,7 +65,7 @@ export function LiveWave({ duration, isPlaying, className }: LiveWaveProps) {
       if (!a || bandRanges) return;
       const sr = a.context.sampleRate;
       const binHz = sr / a.fftSize;
-      bandRanges = BANDS.map((b) => ({
+      bandRanges = BAND_HZ.map((b) => ({
         start: Math.max(0, Math.floor(b.lo / binHz)),
         end: Math.min(a.frequencyBinCount - 1, Math.ceil(b.hi / binHz)),
       }));
@@ -104,6 +73,10 @@ export function LiveWave({ duration, isPlaying, className }: LiveWaveProps) {
     };
 
     const draw = () => {
+      // Live tuning — read once per frame.
+      const t = useTuning.getState();
+      const tBands = t.bands;
+
       const rect = wrap.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
       const w = rect.width;
@@ -130,9 +103,9 @@ export function LiveWave({ duration, isPlaying, className }: LiveWaveProps) {
         ensureBands();
         if (freqBin && bandRanges) {
           a.getFloatFrequencyData(freqBin);
-          for (let b = 0; b < BANDS.length; b++) {
+          for (let b = 0; b < tBands.length; b++) {
             const { start, end } = bandRanges[b];
-            const band = BANDS[b];
+            const band = tBands[b];
             let sum = 0;
             let n = 0;
             for (let i = start; i <= end; i++) {
@@ -140,33 +113,27 @@ export function LiveWave({ duration, isPlaying, className }: LiveWaveProps) {
               n++;
             }
             const avgDb = n > 0 ? sum / n : band.minDb;
-            // Per-band dB → 0..1 normalization gives mids/highs equal footing
-            // with bass despite their lower absolute energy.
             const range = Math.max(1, band.maxDb - band.minDb);
             const norm = Math.max(
               0,
               Math.min(1, (avgDb - band.minDb) / range)
             );
-            const ease = norm > levels[b] ? ATTACK : RELEASE;
+            const ease = norm > levels[b] ? t.attack : t.release;
             levels[b] = levels[b] + (norm - levels[b]) * ease;
           }
         }
       } else {
-        // Bleed off levels so the active region collapses to flat smoothly.
-        for (let b = 0; b < BANDS.length; b++) levels[b] *= 1 - RELEASE;
+        for (let b = 0; b < tBands.length; b++) levels[b] *= 1 - t.release;
       }
 
-      // Flow advance proportional to total band energy → motion only when music plays
+      // Flow advance proportional to total band energy
       let totalEnergy = 0;
-      for (let b = 0; b < BANDS.length; b++) totalEnergy += levels[b];
-      flowRef.current += totalEnergy * FLOW_SPEED;
+      for (let b = 0; b < tBands.length; b++) totalEnergy += levels[b];
+      flowRef.current += totalEnergy * t.flowSpeed;
 
-      // Pre-compute chirp phase across the active region using trapezoidal
-      // integration of an exponentially-interpolated spatial frequency.
-      // Closed form for log-linear chirp:
-      //   φ(lu) = 2π · (e^(logL + k·lu) − e^logL) / k,  k = logR − logL
-      const logL = Math.log(SPATIAL_FREQ_LEFT);
-      const logR = Math.log(SPATIAL_FREQ_RIGHT);
+      // Chirp phase — log-interp spatial frequency.
+      const logL = Math.log(Math.max(0.01, t.freqLeft));
+      const logR = Math.log(Math.max(0.01, t.freqRight));
       const k = logR - logL;
       const expL = Math.exp(logL);
       const phaseAt = (lu: number): number => {
@@ -174,7 +141,6 @@ export function LiveWave({ duration, isPlaying, className }: LiveWaveProps) {
         return ((Math.exp(logL + k * lu) - expL) / k) * Math.PI * 2;
       };
 
-      // Build control points
       const xs = new Float32Array(POINT_COUNT);
       const ys = new Float32Array(POINT_COUNT);
 
@@ -186,14 +152,13 @@ export function LiveWave({ duration, isPlaying, className }: LiveWaveProps) {
         let yNorm = 0;
 
         if (playX > 1 && x <= playX) {
-          // ── ACTIVE REGION ────────────────────────────────────────────
-          const lu = x / playX; // 0..1 within active region
+          const lu = x / playX;
 
-          // Amplitude — sum of band Gaussians at their preferred lu position
           let A = 0;
-          for (let b = 0; b < BANDS.length; b++) {
-            const d = (lu - BANDS[b].cx) / BANDS[b].spread;
-            A += levels[b] * BANDS[b].gain * Math.exp(-d * d);
+          for (let b = 0; b < tBands.length; b++) {
+            const band = tBands[b];
+            const d = (lu - band.cx) / Math.max(0.01, band.spread);
+            A += levels[b] * band.gain * Math.exp(-d * d);
           }
 
           const phase = phaseAt(lu) + flowRef.current;
