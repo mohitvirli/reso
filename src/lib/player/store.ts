@@ -28,8 +28,12 @@ interface PlayerState {
   muted: boolean;
   shuffle: boolean;
   repeat: RepeatMode;
+  /** When true, the album region shows the UploadGate again so the user can
+   *  swap to a different file or demo while a track is already loaded. */
+  swapMode: boolean;
 
   setTrack: (track: TrackMeta | null) => void;
+  setSwapMode: (v: boolean) => void;
   setIsPlaying: (v: boolean) => void;
   setIsLoading: (v: boolean) => void;
   setCurrentTime: (t: number) => void;
@@ -50,7 +54,9 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   muted: false,
   shuffle: false,
   repeat: "off",
+  swapMode: false,
 
+  setSwapMode: (swapMode) => set({ swapMode }),
   setTrack: (track) =>
     set((s) => {
       // Clean up any stale artwork object URL

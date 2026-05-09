@@ -37,7 +37,6 @@ export function Transport() {
         onClick={() => void togglePlayPause()}
         aria-label={isPlaying ? "Pause" : "Play"}
       >
-        {/* Combined ▶|| icon — universal play/pause symbol; LED conveys state. */}
         <span className="flex items-center gap-[3px] text-ink">
           <Play className="size-4" strokeWidth={0} fill="currentColor" />
           <Pause className="size-4" strokeWidth={0} fill="currentColor" />
