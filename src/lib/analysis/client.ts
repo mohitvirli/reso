@@ -1,0 +1,41 @@
+/**
+ * Client for the /api/analyze proxy → reso-analysis FastAPI service.
+ */
+
+export interface AnalysisSegment {
+  start: number;
+  end: number;
+  label: string;
+}
+
+export interface AnalysisResult {
+  bpm: number;
+  key: string;
+  beats: number[];
+  downbeats: number[];
+  beat_positions: number[];
+  segments: AnalysisSegment[];
+  duration: number;
+}
+
+/** Formats reso-analysis accepts. Other types skip analysis silently. */
+const SUPPORTED_EXTENSIONS = new Set(["mp3", "wav"]);
+
+export function isAnalyzable(file: File): boolean {
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  return ext ? SUPPORTED_EXTENSIONS.has(ext) : false;
+}
+
+export async function analyzeFile(file: File): Promise<AnalysisResult> {
+  const fd = new FormData();
+  fd.append("file", file, file.name);
+
+  const res = await fetch("/api/analyze", { method: "POST", body: fd });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Analysis failed (${res.status}): ${text || res.statusText}`);
+  }
+
+  return (await res.json()) as AnalysisResult;
+}
