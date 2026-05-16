@@ -1,6 +1,18 @@
 import { create } from "zustand";
+import type { AnalysisSegment } from "@/lib/analysis/client";
 
 export type RepeatMode = "off" | "all" | "one";
+
+export type AnalysisStatus = "idle" | "pending" | "ready" | "error" | "unsupported";
+
+export interface AnalysisData {
+  beats: number[];
+  downbeats: number[];
+  beatPositions: number[];
+  segments: AnalysisSegment[];
+  /** Duration as reported by the analyzer (independent of HTMLMediaElement). */
+  duration: number;
+}
 
 export interface TrackMeta {
   title: string;
@@ -32,8 +44,15 @@ interface PlayerState {
    *  swap to a different file or demo while a track is already loaded. */
   swapMode: boolean;
 
+  analysisStatus: AnalysisStatus;
+  analysisError: string | null;
+  analysis: AnalysisData | null;
+
   setTrack: (track: TrackMeta | null) => void;
   setSwapMode: (v: boolean) => void;
+  setAnalysisStatus: (s: AnalysisStatus, error?: string | null) => void;
+  setAnalysis: (a: AnalysisData | null) => void;
+  patchTrack: (patch: Partial<TrackMeta>) => void;
   setIsPlaying: (v: boolean) => void;
   setIsLoading: (v: boolean) => void;
   setCurrentTime: (t: number) => void;
@@ -56,6 +75,10 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   repeat: "off",
   swapMode: false,
 
+  analysisStatus: "idle",
+  analysisError: null,
+  analysis: null,
+
   setSwapMode: (swapMode) => set({ swapMode }),
   setTrack: (track) =>
     set((s) => {
@@ -68,8 +91,17 @@ export const usePlayerStore = create<PlayerState>((set) => ({
         currentTime: 0,
         duration: track?.durationSec ?? 0,
         isPlaying: false,
+        // New track invalidates previous analysis.
+        analysisStatus: "idle",
+        analysisError: null,
+        analysis: null,
       };
     }),
+  setAnalysisStatus: (analysisStatus, analysisError = null) =>
+    set({ analysisStatus, analysisError }),
+  setAnalysis: (analysis) => set({ analysis }),
+  patchTrack: (patch) =>
+    set((s) => (s.track ? { track: { ...s.track, ...patch } } : s)),
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setIsLoading: (isLoading) => set({ isLoading }),
   setCurrentTime: (currentTime) => set({ currentTime }),
