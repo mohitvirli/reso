@@ -4,6 +4,7 @@ import { usePlayerStore } from "@/lib/player/store";
 import Image from "next/image";
 import * as React from "react";
 import { Stage } from "./Stage";
+import { ThemeToggle } from "./ThemeToggle";
 import { Transport } from "./Transport";
 import { TweaksMenu } from "./TweaksMenu";
 
@@ -21,6 +22,7 @@ export function PlayerRoot() {
   return (
     <div className="relative min-h-svh w-full">
       <BackgroundArtwork />
+      <ThemeToggle />
       <div className="relative z-10 flex w-full px-5 py-10 sm:py-16">
         <main className="mx-auto flex w-full max-w-[440px] flex-col gap-8">
           <Stage />
@@ -53,11 +55,18 @@ function BackgroundArtwork() {
         unoptimized
         priority
         className="scale-125 object-cover blur-3xl saturate-150"
+        style={{ opacity: "var(--art-bg-opacity, 1)" }}
       />
-      {/* Paper-tinted overlay — high alpha keeps ink text readable. */}
-      <div className="absolute inset-0 bg-paper/70" />
-      {/* Subtle vignette to anchor reading attention to the centre column. */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,oklch(0.94_0.018_85_/_0.35)_70%,oklch(0.92_0.022_80_/_0.6)_100%)]" />
+      {/* Themed tint — keeps chrome readable over coloured artwork. */}
+      <div
+        className="absolute inset-0"
+        style={{ background: "var(--backdrop-tint)" }}
+      />
+      {/* Vignette — pulls focus to the centre column. */}
+      <div
+        className="absolute inset-0"
+        style={{ background: "var(--backdrop-vignette)" }}
+      />
     </div>
   );
 }

@@ -104,7 +104,7 @@ export const ControlButton = React.forwardRef<
         className="pointer-events-none absolute rounded-full border z-0"
         style={{
           inset: -8,
-          borderColor: "oklch(0.22 0.02 50 / 0.32)",
+          borderColor: "var(--color-line)",
         }}
       >
         {led ? <Led on={ledOn} /> : null}
@@ -118,21 +118,20 @@ export const ControlButton = React.forwardRef<
  * LED chip on the outer rail at 12 o'clock — flat against the surface,
  * not extruding. Bright + glowing when "on" (playing), dim when "off".
  */
+const LED_GREEN = "oklch(0.80 0.210 142)";
+const LED_GREEN_DIM = "oklch(0.55 0.090 142)";
+
 function Led({ on }: { on: boolean }) {
   return (
     <span
       aria-hidden
       className="absolute left-1/2 -translate-x-1/2 rounded-[1.5px]"
       style={{
-        // Centered on the rail's top edge (parent inset: -8 → top edge at y=-8 from button).
-        // LED height 9 → top:-12 puts the LED's center near the rail line.
         top: -4,
         width: 7,
         height: 9,
-        background: on ? "var(--color-led)" : "var(--color-led-dim)",
-        boxShadow: on
-          ? "0 0 6px var(--color-led), 0 0 1px var(--color-led)"
-          : "none",
+        background: on ? LED_GREEN : LED_GREEN_DIM,
+        boxShadow: on ? `0 0 6px ${LED_GREEN}, 0 0 1px ${LED_GREEN}` : "none",
         opacity: on ? 1 : 0.5,
       }}
     />

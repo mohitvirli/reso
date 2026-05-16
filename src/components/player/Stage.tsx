@@ -1,11 +1,11 @@
 "use client";
+import type { AnalysisSegment } from "@/lib/analysis/client";
 import { seek } from "@/lib/player/controller";
 import { usePlayerStore } from "@/lib/player/store";
 import { formatTime } from "@/lib/util/time";
 import { Replace } from "lucide-react";
 import Image from "next/image";
 import * as React from "react";
-import type { AnalysisSegment } from "@/lib/analysis/client";
 import { LiveWave } from "./LiveWave";
 import { UploadGate } from "./UploadGate";
 
@@ -215,34 +215,34 @@ function tickWeight(label?: string): number {
  * presence, used to distinguish chorus from supporting sections without
  * introducing color.
  */
-function segmentFill(label?: string): string {
-  if (!label) return "rgba(0,0,0,0.03)";
+function segmentFillOpacity(label?: string): number {
+  if (!label) return 0.05;
   const key = label.toLowerCase().trim();
   switch (key) {
     case "chorus":
-      return "rgba(0,0,0,0.14)";
+      return 0.3;
     case "verse":
-      return "rgba(0,0,0,0.09)";
+      return 0.2;
     case "bridge":
-      return "rgba(0,0,0,0.08)";
+      return 0.18;
     case "pre-chorus":
     case "prechorus":
-      return "rgba(0,0,0,0.07)";
+      return 0.15;
     case "inst":
     case "instrumental":
     case "solo":
-      return "rgba(0,0,0,0.06)";
+      return 0.12;
     case "break":
     case "breakdown":
-      return "rgba(0,0,0,0.05)";
+      return 0.1;
     case "intro":
     case "outro":
-      return "rgba(0,0,0,0.04)";
+      return 0.06;
     case "start":
     case "end":
-      return "rgba(0,0,0,0.02)";
+      return 0.04;
     default:
-      return "rgba(0,0,0,0.03)";
+      return 0.05;
   }
 }
 
@@ -431,7 +431,8 @@ function TickScale({
                     y="0"
                     width={w}
                     height="12"
-                    fill={segmentFill(seg.label)}
+                    fill="var(--color-ink)"
+                    fillOpacity={segmentFillOpacity(seg.label)}
                   />
                 );
               })}
