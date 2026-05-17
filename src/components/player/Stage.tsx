@@ -3,11 +3,9 @@ import type { AnalysisSegment } from "@/lib/analysis/client";
 import { seek } from "@/lib/player/controller";
 import { usePlayerStore } from "@/lib/player/store";
 import { formatTime } from "@/lib/util/time";
-import { Replace } from "lucide-react";
 import Image from "next/image";
 import * as React from "react";
 import { LiveWave } from "./LiveWave";
-import { UploadGate } from "./UploadGate";
 
 /**
  * Hero stack: album art + title/artist header → recessed display window
@@ -18,8 +16,6 @@ export function Stage() {
   const currentTime = usePlayerStore((s) => s.currentTime);
   const duration = usePlayerStore((s) => s.duration);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
-  const swapMode = usePlayerStore((s) => s.swapMode);
-  const setSwapMode = usePlayerStore((s) => s.setSwapMode);
   const analysisStatus = usePlayerStore((s) => s.analysisStatus);
   const analysisError = usePlayerStore((s) => s.analysisError);
   const segments = usePlayerStore((s) => s.analysis?.segments);
@@ -56,39 +52,22 @@ export function Stage() {
       <div className="flex flex-col flex-grow align-items-center justify-center">
         {/* Album / upload region */}
         <div className="relative aspect-square w-full overflow-hidden rounded-2xl shadow-sleeve">
-          {!track || swapMode ? (
-            <UploadGate
-              onCancel={track ? () => setSwapMode(false) : undefined}
+          {track && track.artworkUrl ? (
+            <Image
+              src={track.artworkUrl}
+              alt={`${track.album} — cover`}
+              fill
+              sizes="(max-width: 480px) 100vw, 440px"
+              className="object-cover"
+              unoptimized
+              priority
             />
           ) : (
-            <>
-              {track.artworkUrl ? (
-                <Image
-                  src={track.artworkUrl}
-                  alt={`${track.album} — cover`}
-                  fill
-                  sizes="(max-width: 480px) 100vw, 440px"
-                  className="object-cover"
-                  unoptimized
-                  priority
-                />
-              ) : (
-                <div className="grid h-full w-full place-items-center bg-paper-warm">
-                  <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-ink-soft">
-                    No artwork
-                  </span>
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => setSwapMode(true)}
-                aria-label="Swap track"
-                title="Swap track"
-                className="absolute top-3 right-3 z-10 grid size-9 cursor-pointer place-items-center rounded-full border border-line bg-paper/80 text-ink shadow-soft backdrop-blur transition-colors hover:bg-paper"
-              >
-                <Replace className="size-4" strokeWidth={1.6} />
-              </button>
-            </>
+            <div className="grid h-full w-full place-items-center bg-paper-warm/40">
+              <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-ink-soft">
+                {track ? "No artwork" : "Pick a track"}
+              </span>
+            </div>
           )}
         </div>
       </div>

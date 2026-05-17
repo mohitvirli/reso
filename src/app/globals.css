@@ -130,6 +130,27 @@
   --body-grad-top:      oklch(0.96 0.020 88);
   --body-grad-bot:      oklch(0.92 0.022 80);
   --art-bg-opacity:     1;
+
+}
+
+/* Active-row glass (queue) — outside @theme so Tailwind doesn't strip non-utility tokens.
+ * Liquid-glass aesthetic: layered gradient, bright top edge, soft outer drop. */
+:root {
+  --glass-active-bg:      linear-gradient(135deg, oklch(1 0 0 / 0.12) 0%, oklch(1 0 0 / 0.04) 55%, oklch(1 0 0 / 0.08) 100%);
+  --glass-active-border:  oklch(1 0 0 / 0.16);
+  --glass-active-shadow:
+    0 1px 0 oklch(1 0 0 / 0.18) inset,
+    0 12px 32px -4px oklch(0 0 0 / 0.35),
+    0 4px 10px -2px oklch(0 0 0 / 0.20);
+}
+
+[data-theme="light"] {
+  --glass-active-bg:      linear-gradient(135deg, oklch(1 0 0 / 0.52) 0%, oklch(1 0 0 / 0.28) 55%, oklch(1 0 0 / 0.40) 100%);
+  --glass-active-border:  oklch(1 0 0 / 0.60);
+  --glass-active-shadow:
+    0 1px 0 oklch(1 0 0 / 0.70) inset,
+    0 12px 28px -4px oklch(0.20 0.04 50 / 0.14),
+    0 4px 10px -2px oklch(0.20 0.04 50 / 0.10);
 }
 
 @layer base {
