@@ -42,7 +42,7 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={isLight ? "Switch to dark theme" : "Switch to light theme"}
       title={isLight ? "Switch to dark theme" : "Switch to light theme"}
-      className="fixed top-4 right-4 z-40 grid size-9 cursor-pointer place-items-center rounded-full border border-line-subtle bg-paper/40 text-ink-soft backdrop-blur-md transition-colors hover:bg-paper-warm/60 hover:text-ink"
+      className="grid size-9 cursor-pointer place-items-center rounded-full border border-line-subtle bg-paper/40 text-ink-soft backdrop-blur-md transition-colors hover:bg-paper-warm/60 hover:text-ink"
       suppressHydrationWarning
     >
       {mounted && isLight ? (

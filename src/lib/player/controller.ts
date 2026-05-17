@@ -164,16 +164,24 @@ export function wireEngineListeners(): () => void {
   const onWaiting = () => set({ isLoading: true });
   const onCanPlay = () => set({ isLoading: false });
   const onEnded = () => {
-    const { repeat } = usePlayerStore.getState();
+    const { repeat, library, libraryIndex } = usePlayerStore.getState();
     if (repeat === "one") {
       engine.seek(0);
       void engine.play();
-    } else {
-      set({
-        isPlaying: false,
-        currentTime: engine.audio.duration || 0,
-      });
+      return;
     }
+    if (library.length > 0) {
+      const isLast =
+        libraryIndex != null && libraryIndex >= library.length - 1;
+      if (!isLast || repeat === "all") {
+        void next();
+        return;
+      }
+    }
+    set({
+      isPlaying: false,
+      currentTime: engine.audio.duration || 0,
+    });
   };
   const onVolumeChange = () =>
     set({ volume: engine.audio.volume, muted: engine.audio.muted });
@@ -287,19 +295,63 @@ export function cycleRepeat(): void {
   usePlayerStore.getState().cycleRepeat();
 }
 
-/** Phase 1: prev/next replay the same track. Wire to a queue when added. */
+/** Fetch a library track by URL and load it as the current track. */
+export async function playLibraryIndex(index: number): Promise<void> {
+  const { library } = usePlayerStore.getState();
+  if (index < 0 || index >= library.length) return;
+  const item = library[index];
+  usePlayerStore.getState().setLibraryIndex(index);
+  try {
+    const res = await fetch(item.url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const file = new File([blob], item.name, {
+      type: blob.type || "audio/mpeg",
+    });
+    await loadFile(file);
+  } catch (err) {
+    console.error("Library load failed", err);
+    usePlayerStore.setState({ isLoading: false });
+  }
+}
+
 export async function next(): Promise<void> {
-  const engine = getEngine();
-  engine.seek(0);
-  await engine.play();
+  const { library, libraryIndex, shuffle } = usePlayerStore.getState();
+  if (library.length === 0) {
+    const engine = getEngine();
+    engine.seek(0);
+    await engine.play();
+    return;
+  }
+  let nextIdx: number;
+  if (shuffle && library.length > 1) {
+    do {
+      nextIdx = Math.floor(Math.random() * library.length);
+    } while (nextIdx === libraryIndex);
+  } else {
+    nextIdx =
+      libraryIndex == null ? 0 : (libraryIndex + 1) % library.length;
+  }
+  await playLibraryIndex(nextIdx);
 }
 
 export async function previous(): Promise<void> {
   const engine = getEngine();
+  // If past 3s into the current track, prev rewinds rather than skipping back.
   if (engine.audio.currentTime > 3) {
     engine.seek(0);
-  } else {
-    engine.seek(0);
+    if (engine.audio.paused) await engine.play();
+    return;
   }
-  if (engine.audio.paused) await engine.play();
+  const { library, libraryIndex } = usePlayerStore.getState();
+  if (library.length === 0) {
+    engine.seek(0);
+    if (engine.audio.paused) await engine.play();
+    return;
+  }
+  const prevIdx =
+    libraryIndex == null
+      ? 0
+      : (libraryIndex - 1 + library.length) % library.length;
+  await playLibraryIndex(prevIdx);
 }

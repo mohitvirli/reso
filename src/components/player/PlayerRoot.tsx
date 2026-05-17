@@ -3,6 +3,9 @@ import { wireEngineListeners } from "@/lib/player/controller";
 import { usePlayerStore } from "@/lib/player/store";
 import Image from "next/image";
 import * as React from "react";
+import { cn } from "@/lib/util/cn";
+import { ListMusic } from "lucide-react";
+import { Library } from "./Library";
 import { Stage } from "./Stage";
 import { ThemeToggle } from "./ThemeToggle";
 import { Transport } from "./Transport";
@@ -18,18 +21,43 @@ export function PlayerRoot() {
   React.useEffect(() => {
     return wireEngineListeners();
   }, []);
+  const libraryOpen = usePlayerStore((s) => s.libraryOpen);
+  const setLibraryOpen = usePlayerStore((s) => s.setLibraryOpen);
 
   return (
     <div className="relative min-h-svh w-full">
       <BackgroundArtwork />
-      <ThemeToggle />
-      <div className="relative z-10 flex w-full px-5 py-10 sm:py-16">
-        <main className="mx-auto flex w-full max-w-[440px] flex-col gap-8">
+      <div
+        className={cn(
+          "fixed top-4 z-40 flex items-center gap-2 transition-[right]",
+          libraryOpen ? "right-4 min-[700px]:right-[calc(40vw+1rem)]" : "right-4"
+        )}
+      >
+        {!libraryOpen && (
+          <button
+            type="button"
+            aria-label="Open queue"
+            title="Open queue"
+            onClick={() => setLibraryOpen(true)}
+            className="grid size-9 cursor-pointer place-items-center rounded-full border border-line-subtle bg-paper/40 text-ink-soft backdrop-blur-md transition-colors hover:bg-paper-warm/60 hover:text-ink"
+          >
+            <ListMusic className="size-4" strokeWidth={1.6} />
+          </button>
+        )}
+        <ThemeToggle />
+      </div>
+      <div
+        className={cn(
+          "relative z-10 mx-auto flex w-full max-w-[1280px] justify-center px-5 py-10 sm:py-16",
+          libraryOpen && "min-[700px]:pr-[40vw]"
+        )}
+      >
+        <main className="flex w-full max-w-[440px] flex-col gap-8">
           <Stage />
           <Transport />
-          {/* <TrackInfo /> */}
         </main>
       </div>
+      {libraryOpen && <Library />}
       <TweaksMenu />
     </div>
   );

@@ -3,6 +3,13 @@ import type { AnalysisSegment } from "@/lib/analysis/client";
 
 export type RepeatMode = "off" | "all" | "one";
 
+export interface LibraryTrack {
+  /** Display name (without extension). */
+  name: string;
+  /** Public URL to fetch. */
+  url: string;
+}
+
 export type AnalysisStatus = "idle" | "pending" | "ready" | "error" | "unsupported";
 
 export interface AnalysisData {
@@ -48,6 +55,21 @@ interface PlayerState {
   analysisError: string | null;
   analysis: AnalysisData | null;
 
+  library: LibraryTrack[];
+  libraryIndex: number | null;
+  libraryLoaded: boolean;
+  libraryError: string | null;
+  /** Probed durations (seconds) keyed by library track URL. */
+  libraryDurations: Record<string, number>;
+  /** Side panel open/closed. */
+  libraryOpen: boolean;
+
+  setLibrary: (tracks: LibraryTrack[]) => void;
+  setLibraryError: (err: string | null) => void;
+  setLibraryIndex: (i: number | null) => void;
+  setLibraryDuration: (url: string, sec: number) => void;
+  setLibraryOpen: (v: boolean) => void;
+
   setTrack: (track: TrackMeta | null) => void;
   setSwapMode: (v: boolean) => void;
   setAnalysisStatus: (s: AnalysisStatus, error?: string | null) => void;
@@ -78,6 +100,20 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   analysisStatus: "idle",
   analysisError: null,
   analysis: null,
+
+  library: [],
+  libraryIndex: null,
+  libraryLoaded: false,
+  libraryError: null,
+  libraryDurations: {},
+  libraryOpen: true,
+
+  setLibrary: (library) => set({ library, libraryLoaded: true }),
+  setLibraryError: (libraryError) => set({ libraryError, libraryLoaded: true }),
+  setLibraryIndex: (libraryIndex) => set({ libraryIndex }),
+  setLibraryDuration: (url, sec) =>
+    set((s) => ({ libraryDurations: { ...s.libraryDurations, [url]: sec } })),
+  setLibraryOpen: (libraryOpen) => set({ libraryOpen }),
 
   setSwapMode: (swapMode) => set({ swapMode }),
   setTrack: (track) =>

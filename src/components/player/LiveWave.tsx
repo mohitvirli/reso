@@ -54,8 +54,7 @@ export function LiveWave({ duration, isPlaying, className }: LiveWaveProps) {
     let freqBin: Float32Array<ArrayBuffer> | null = null;
     let bandRanges: { start: number; end: number }[] | null = null;
 
-    // Resolve --color-ink at mount; OKLCH literal is the fallback.
-    const inkColor =
+    const getInkColor = () =>
       getComputedStyle(document.documentElement)
         .getPropertyValue("--color-ink")
         .trim() || "oklch(0.22 0.015 50)";
@@ -188,7 +187,7 @@ export function LiveWave({ duration, isPlaying, className }: LiveWaveProps) {
       if (nearestD < w / POINT_COUNT) ys[nearestIdx] = baseline;
 
       // Stroke
-      ctx.strokeStyle = inkColor;
+      ctx.strokeStyle = getInkColor();
       ctx.lineWidth = 1.6;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
