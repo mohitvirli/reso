@@ -18,6 +18,7 @@ export function Transport() {
     <div
       role="group"
       aria-label="Playback controls"
+      data-anim="transport"
       className="grid grid-cols-3 items-center justify-items-center gap-4"
     >
       <ControlButton
