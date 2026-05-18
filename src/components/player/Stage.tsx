@@ -67,10 +67,25 @@ export function Stage() {
             />
           ) : (
             <div className="grid h-full w-full place-items-center bg-paper-warm/40">
-              <div className="flex flex-col items-center gap-3 px-6 text-center">
-                <span className="font-display text-[2rem] font-bold tracking-[-0.02em] text-ink">
-                  Reso
-                </span>
+              <div className="flex flex-col items-center gap-5 px-6 text-center">
+                <div className="relative h-32 w-32">
+                  <Image
+                    src="/reso-mark-dark.svg"
+                    alt=""
+                    fill
+                    sizes="128px"
+                    priority
+                    className="reso-mark reso-mark--dark object-contain"
+                  />
+                  <Image
+                    src="/reso-mark-light.svg"
+                    alt=""
+                    fill
+                    sizes="128px"
+                    priority
+                    className="reso-mark reso-mark--light object-contain"
+                  />
+                </div>
                 <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-soft">
                   {track ? "No artwork" : "Listen closer"}
                 </span>

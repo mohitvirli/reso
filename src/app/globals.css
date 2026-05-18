@@ -471,3 +471,8 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Brand mark — light variant for [data-theme="light"], dark variant default. */
+.reso-mark--light { display: none; }
+[data-theme="light"] .reso-mark--dark { display: none; }
+[data-theme="light"] .reso-mark--light { display: block; }
