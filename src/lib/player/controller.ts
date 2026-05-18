@@ -25,6 +25,33 @@ let analysisAbort: AbortController | null = null;
 const analysisCache = new Map<string, AnalysisResult>();
 const analysisInflight = new Map<string, Promise<AnalysisResult>>();
 
+interface BakedManifestEntry {
+  hash: string;
+  analysis: AnalysisResult;
+}
+
+let bakedManifestPromise: Promise<Map<string, AnalysisResult>> | null = null;
+
+function loadBakedManifest(): Promise<Map<string, AnalysisResult>> {
+  if (!bakedManifestPromise) {
+    bakedManifestPromise = fetch("/demo/manifest.json", { cache: "force-cache" })
+      .then(async (res) => {
+        if (!res.ok) return new Map<string, AnalysisResult>();
+        const entries = (await res.json()) as BakedManifestEntry[];
+        const map = new Map<string, AnalysisResult>();
+        for (const e of entries) if (e?.hash && e.analysis) map.set(e.hash, e.analysis);
+        return map;
+      })
+      .catch(() => new Map<string, AnalysisResult>());
+  }
+  return bakedManifestPromise;
+}
+
+async function getBakedAnalysis(hash: string): Promise<AnalysisResult | null> {
+  const map = await loadBakedManifest();
+  return map.get(hash) ?? null;
+}
+
 async function hashFile(file: File): Promise<string> {
   const buf = await file.arrayBuffer();
   const digest = await crypto.subtle.digest("SHA-256", buf);
@@ -109,6 +136,24 @@ async function runAnalysis(file: File): Promise<void> {
     }
   } catch (err) {
     console.warn("[analysis] idb read failed; continuing to network", err);
+  }
+
+  // Pre-baked manifest by hash — lets prod deploys skip the analyzer.
+  try {
+    const baked = await getBakedAnalysis(key);
+    if (baked) {
+      if (ctrl.signal.aborted) return;
+      analysisCache.set(key, baked);
+      try {
+        await putCachedAnalysis(key, baked);
+      } catch (err) {
+        console.warn("[analysis] idb write failed", err);
+      }
+      applyAnalysisToStore(baked);
+      return;
+    }
+  } catch {
+    /* fall through to network */
   }
 
   // Coalesce concurrent requests for the same content.
