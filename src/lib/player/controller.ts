@@ -340,23 +340,40 @@ export function cycleRepeat(): void {
   usePlayerStore.getState().cycleRepeat();
 }
 
+let libraryFetchAbort: AbortController | null = null;
+
 /** Fetch a library track by URL and load it as the current track. */
 export async function playLibraryIndex(index: number): Promise<void> {
   const { library } = usePlayerStore.getState();
   if (index < 0 || index >= library.length) return;
   const item = library[index];
+
+  // Cancel any prior in-flight library fetch + analysis so rapid clicks
+  // don't queue up downloads of stale tracks.
+  libraryFetchAbort?.abort();
+  analysisAbort?.abort();
+  const ctrl = new AbortController();
+  libraryFetchAbort = ctrl;
+
   usePlayerStore.getState().setLibraryIndex(index);
+  // Show loader immediately — fetch on slow networks is the long pole.
+  usePlayerStore.setState({ isLoading: true });
+
   try {
-    const res = await fetch(item.url);
+    const res = await fetch(item.url, { signal: ctrl.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const blob = await res.blob();
+    if (ctrl.signal.aborted) return;
     const file = new File([blob], item.name, {
       type: blob.type || "audio/mpeg",
     });
     await loadFile(file);
   } catch (err) {
+    if ((err as Error)?.name === "AbortError") return;
     console.error("Library load failed", err);
     usePlayerStore.setState({ isLoading: false });
+  } finally {
+    if (libraryFetchAbort === ctrl) libraryFetchAbort = null;
   }
 }
 

@@ -223,6 +223,37 @@
 }
 
 @layer utilities {
+  /* Theme-swap transition. Applied to <html> for ~400ms after a toggle so
+     every coloured surface eases between palettes instead of snapping. */
+  .theme-transitioning,
+  .theme-transitioning *,
+  .theme-transitioning *::before,
+  .theme-transitioning *::after {
+    transition:
+      background-color 380ms cubic-bezier(0.22, 1, 0.36, 1),
+      color 380ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 380ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 380ms cubic-bezier(0.22, 1, 0.36, 1),
+      fill 380ms cubic-bezier(0.22, 1, 0.36, 1),
+      stroke 380ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+  }
+
+  /* Pre-animation hidden state. GSAP clears these inline once the mount
+     timeline starts — but until then, server-rendered elements stay
+     invisible so they don't flash before the first tween. */
+  [data-anim] {
+    opacity: 0;
+  }
+
+  /* Queue panel starts off-screen + hidden so it never flashes before the
+     master entrance timeline reaches it. GSAP overrides inline style on
+     the first tween. */
+  [data-queue-panel] {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   /* Card surface — slightly warmer than the page background. */
   .bg-card {
     background-color: var(--color-paper-warm);

@@ -69,7 +69,7 @@ export const ControlButton = React.forwardRef<
         "transition-[background-color,transform,box-shadow,scale] duration-300",
         "active:translate-y-px active:shadow-none",
         "hover:shadow-soft-raised hover:scale-105",
-        "disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100",
+        "disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed disabled:shadow-none disabled:hover:scale-100 disabled:hover:shadow-none disabled:active:translate-y-0 disabled:text-ink-soft",
         SIZE_CLASS[size],
         surface,
         // When wrapped in a rail, button has no extra outside margin

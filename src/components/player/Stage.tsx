@@ -28,8 +28,8 @@ export function Stage() {
     );
   }, [segments, currentTime]);
 
-  const title = track?.title ?? "Awaiting upload";
-  const artist = track?.artist ?? "Drop a song to begin";
+  const title = track?.title ?? "Reso";
+  const artist = track?.artist ?? "Pick a track from the queue";
   const keyValue = track?.key ?? "—";
   const bpmValue = track?.bpm ? String(Math.round(track.bpm)) : "—";
 
@@ -51,7 +51,10 @@ export function Stage() {
     <section aria-label="Now playing" className="flex flex-col flex-grow gap-5">
       <div className="flex flex-col flex-grow align-items-center justify-center">
         {/* Album / upload region */}
-        <div className="relative aspect-square w-full overflow-hidden rounded-2xl shadow-sleeve">
+        <div
+          data-anim="album"
+          className="relative aspect-square w-full overflow-hidden rounded-2xl shadow-sleeve"
+        >
           {track && track.artworkUrl ? (
             <Image
               src={track.artworkUrl}
@@ -64,9 +67,14 @@ export function Stage() {
             />
           ) : (
             <div className="grid h-full w-full place-items-center bg-paper-warm/40">
-              <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-ink-soft">
-                {track ? "No artwork" : "Pick a track"}
-              </span>
+              <div className="flex flex-col items-center gap-3 px-6 text-center">
+                <span className="font-display text-[2rem] font-bold tracking-[-0.02em] text-ink">
+                  Reso
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-soft">
+                  {track ? "No artwork" : "Listen closer"}
+                </span>
+              </div>
             </div>
           )}
         </div>
@@ -74,7 +82,7 @@ export function Stage() {
 
       <div className="flex flex-col justify-self-end gap-5">
         {/* Title + artist */}
-        <header className="flex flex-col gap-1.5">
+        <header data-anim="header" className="flex flex-col gap-1.5">
           <h1 className="truncate font-display h-10 text-[1.75rem] font-bold leading-[1.1] tracking-[-0.02em] text-ink">
             {title}
           </h1>
@@ -84,7 +92,10 @@ export function Stage() {
         </header>
 
         {/* The inset display window — recessed glass holding ticks, wave, knob */}
-        <div className="display-inset display-sheen rounded-md px-4 pt-3 pb-2">
+        <div
+          data-anim="display"
+          className="display-inset display-sheen rounded-md px-4 pt-3 pb-2"
+        >
           <TickScale duration={duration} segments={segments ?? null} />
           <SeekArea
             duration={duration}
@@ -96,7 +107,10 @@ export function Stage() {
         </div>
 
         {/* KEY (left) + BPM (right), sitting below the display */}
-        <div className="flex min-w-0 items-baseline justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.20em] text-ink-soft">
+        <div
+          data-anim="meta"
+          className="flex min-w-0 items-baseline justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.20em] text-ink-soft"
+        >
           <span className="flex min-w-0 items-center gap-2">
             <span className="shrink-0">
               Key <span className="font-bold text-ink">{keyValue}</span>
