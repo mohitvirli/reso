@@ -26,11 +26,26 @@ export function isAnalyzable(file: File): boolean {
   return ext ? SUPPORTED_EXTENSIONS.has(ext) : false;
 }
 
-export async function analyzeFile(file: File): Promise<AnalysisResult> {
+/**
+ * POST the file to `/api/analyze`. Pass `hash` (SHA-256 hex) so the server
+ * can short-circuit via its baked-manifest lookup before touching the
+ * upstream analyzer.
+ */
+export async function analyzeFile(
+  file: File,
+  hash?: string
+): Promise<AnalysisResult> {
   const fd = new FormData();
   fd.append("file", file, file.name);
 
-  const res = await fetch("/api/analyze", { method: "POST", body: fd });
+  const headers: Record<string, string> = {};
+  if (hash) headers["x-content-hash"] = hash;
+
+  const res = await fetch("/api/analyze", {
+    method: "POST",
+    body: fd,
+    headers,
+  });
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");

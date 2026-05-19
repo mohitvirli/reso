@@ -1,14 +1,57 @@
 /**
- * Proxy → reso-analysis FastAPI service.
- * Streams multipart body through to avoid buffering large audio uploads.
+ * /api/analyze
+ *
+ * Two-tier handler:
+ *   1. Manifest lookup — if the client supplies `x-content-hash` and that
+ *      hash is in `public/demo/manifest.json`, return the pre-baked result
+ *      immediately. Skips the analyzer entirely for known demo tracks.
+ *   2. Upstream proxy — otherwise stream the multipart body to the
+ *      reso-analysis FastAPI service.
  */
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { NextResponse } from "next/server";
+import type { AnalysisResult } from "@/lib/analysis/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 const UPSTREAM = process.env.ANALYSIS_API_URL ?? "http://localhost:8000";
+const MANIFEST_PATH = join(process.cwd(), "public", "demo", "manifest.json");
+
+interface BakedEntry {
+  hash: string;
+  analysis: AnalysisResult;
+}
+
+// Cache the parsed manifest in module scope; force-dynamic ensures the
+// route still re-runs per request, but we avoid re-parsing JSON every call.
+let manifestCache: Map<string, AnalysisResult> | null = null;
+let manifestLoadedAt = 0;
+const MANIFEST_TTL_MS = 30_000;
+
+async function getManifest(): Promise<Map<string, AnalysisResult>> {
+  const now = Date.now();
+  if (manifestCache && now - manifestLoadedAt < MANIFEST_TTL_MS) {
+    return manifestCache;
+  }
+  try {
+    const raw = await readFile(MANIFEST_PATH, "utf8");
+    const entries = JSON.parse(raw) as BakedEntry[];
+    const map = new Map<string, AnalysisResult>();
+    for (const e of entries) {
+      if (e?.hash && e.analysis) map.set(e.hash.toLowerCase(), e.analysis);
+    }
+    manifestCache = map;
+    manifestLoadedAt = now;
+    return map;
+  } catch {
+    manifestCache = new Map();
+    manifestLoadedAt = now;
+    return manifestCache;
+  }
+}
 
 export async function POST(request: Request): Promise<Response> {
   const contentType = request.headers.get("content-type");
@@ -17,6 +60,18 @@ export async function POST(request: Request): Promise<Response> {
       { error: "Expected multipart/form-data" },
       { status: 400 }
     );
+  }
+
+  // Manifest hit — short-circuit, no upstream call.
+  const hash = request.headers.get("x-content-hash")?.toLowerCase();
+  if (hash) {
+    const manifest = await getManifest();
+    const baked = manifest.get(hash);
+    if (baked) {
+      return NextResponse.json(baked, {
+        headers: { "x-analysis-source": "baked" },
+      });
+    }
   }
 
   if (!request.body) {
@@ -38,6 +93,7 @@ export async function POST(request: Request): Promise<Response> {
       headers: {
         "content-type":
           upstream.headers.get("content-type") ?? "application/json",
+        "x-analysis-source": "upstream",
       },
     });
   } catch (err) {
