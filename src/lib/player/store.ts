@@ -106,7 +106,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   libraryLoaded: false,
   libraryError: null,
   libraryDurations: {},
-  libraryOpen: true,
+  libraryOpen: false,
 
   setLibrary: (library) => set({ library, libraryLoaded: true }),
   setLibraryError: (libraryError) => set({ libraryError, libraryLoaded: true }),

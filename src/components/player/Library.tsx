@@ -76,6 +76,78 @@ export function Library({ open }: LibraryProps) {
 
   const count = library.length;
   const rootRef = React.useRef<HTMLElement>(null);
+  const ulRef = React.useRef<HTMLUListElement>(null);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const selectorRef = React.useRef<HTMLDivElement>(null);
+  const firstSelectorRender = React.useRef(true);
+
+  // Position the glass selector — lives at aside level (outside the scroll
+  // wrapper) so the scroll container's overflow clip doesn't cut its bleed.
+  // Top is computed relative to the aside via getBoundingClientRect.
+  const updateSelector = React.useCallback(
+    (animate: boolean) => {
+      const ul = ulRef.current;
+      const sel = selectorRef.current;
+      const aside = rootRef.current;
+      const scroll = scrollRef.current;
+      if (!ul || !sel || !aside || !scroll) return;
+      if (libraryIndex == null) {
+        gsap.to(sel, { opacity: 0, duration: 0.2, ease: "power2.out" });
+        return;
+      }
+      const li = ul.children[libraryIndex] as HTMLElement | undefined;
+      if (!li) return;
+      // Use geometric offsets, NOT getBoundingClientRect — the latter
+      // includes the stagger animation's transform on freshly-mounted rows,
+      // which would misposition the selector during the entrance tween.
+      const top =
+        scroll.offsetTop +
+        ul.offsetTop +
+        li.offsetTop -
+        scroll.scrollTop -
+        4;
+      const height = li.offsetHeight + 8;
+      if (firstSelectorRender.current && animate) {
+        gsap.set(sel, { y: top, height, x: 400, opacity: 0 });
+        gsap.to(sel, {
+          opacity: 1,
+          x: 0,
+          duration: 0.5,
+          ease: "power2.out",
+        });
+        firstSelectorRender.current = false;
+        return;
+      }
+      if (animate) {
+        gsap.to(sel, {
+          y: top,
+          height,
+          opacity: 1,
+          duration: 0.8,
+          ease: "power2.out",
+        });
+      } else {
+        gsap.set(sel, { y: top, height, opacity: 1 });
+      }
+    },
+    [libraryIndex]
+  );
+
+  useGSAP(
+    () => {
+      updateSelector(true);
+    },
+    { dependencies: [libraryIndex, library.length], scope: rootRef }
+  );
+
+  // Keep selector locked to its row while the queue scrolls.
+  React.useEffect(() => {
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+    const onScroll = () => updateSelector(false);
+    scroll.addEventListener("scroll", onScroll, { passive: true });
+    return () => scroll.removeEventListener("scroll", onScroll);
+  }, [updateSelector]);
 
   // Track first mount so PlayerRoot's master timeline can drive the initial
   // slide-in (keeps it perfectly synced with the rest of the entrance).
@@ -155,7 +227,29 @@ export function Library({ open }: LibraryProps) {
         </button>
       </header>
 
-      <div data-anim="content" className="flex-1">
+      {/* Glass selector — outside scroll wrapper so its bleed is never
+          clipped by the scroll viewport. Position tracks the active row. */}
+      <div
+        ref={selectorRef}
+        aria-hidden
+        className="pointer-events-none absolute rounded-md will-change-transform"
+        style={{
+          opacity: 0,
+          left: -14,
+          right: -4,
+          top: 0,
+          background: "var(--glass-active-bg)",
+          border: "1px solid var(--glass-active-border)",
+          boxShadow: "var(--glass-active-shadow)",
+          backdropFilter: "blur(24px) saturate(200%)",
+          WebkitBackdropFilter: "blur(24px) saturate(200%)",
+        }}
+      />
+      <div
+        ref={scrollRef}
+        data-anim="content"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
+      >
         {!libraryLoaded && !libraryError && <ShimmerList />}
         {libraryError && (
           <p className="px-3 py-4 font-mono text-[11px] uppercase tracking-[0.18em] text-danger">
@@ -169,6 +263,7 @@ export function Library({ open }: LibraryProps) {
         )}
         {libraryLoaded && !libraryError && count > 0 && (
           <RowList
+            ulRef={ulRef}
             library={library}
             libraryIndex={libraryIndex}
             libraryDurations={libraryDurations}
@@ -182,6 +277,7 @@ export function Library({ open }: LibraryProps) {
 }
 
 interface RowListProps {
+  ulRef: React.RefObject<HTMLUListElement | null>;
   library: { name: string; url: string }[];
   libraryIndex: number | null;
   libraryDurations: Record<string, number>;
@@ -190,109 +286,88 @@ interface RowListProps {
 }
 
 function RowList({
+  ulRef,
   library,
   libraryIndex,
   libraryDurations,
   isLoading,
   open,
 }: RowListProps) {
-  const ulRef = React.useRef<HTMLUListElement>(null);
-  const selectorRef = React.useRef<HTMLDivElement>(null);
-  const firstSelectorRender = React.useRef(true);
+  // Track prior length + open so length changes while the panel is already
+  // open only fade-in the NEW rows (no full re-stagger of existing ones).
+  const prevLenRef = React.useRef(library.length);
+  const prevOpenRef = React.useRef(open);
 
-  // Active-row glass selector — animated via GSAP on libraryIndex change.
   useGSAP(
     () => {
       const ul = ulRef.current;
-      const sel = selectorRef.current;
-      if (!ul || !sel) return;
-      if (libraryIndex == null) {
-        gsap.to(sel, { opacity: 0, duration: 0.2, ease: "power2.out" });
+      if (!ul) {
+        prevLenRef.current = library.length;
+        prevOpenRef.current = open;
         return;
       }
-      const li = ul.children[libraryIndex] as HTMLElement | undefined;
-      if (!li) return;
-      const top = li.offsetTop - 4;
-      const height = li.offsetHeight + 8;
-
-      if (firstSelectorRender.current) {
-        gsap.set(sel, { y: top, height, x: 400, opacity: 0 });
-        gsap.to(sel, { opacity: 1, scale: 1, x: 0, duration: 0.5, ease: "power2.out" });
-        firstSelectorRender.current = false;
+      if (!open) {
+        prevLenRef.current = library.length;
+        prevOpenRef.current = open;
         return;
       }
-      gsap.to(sel, {
-        y: top,
-        height,
-        opacity: 1,
-        duration: 0.8,
-        ease: "power2.out",
-      });
-    },
-    { dependencies: [libraryIndex, library.length], scope: ulRef }
-  );
 
-  // Stagger rows in on panel open / library populate.
-  useGSAP(
-    () => {
-      if (!open) return;
-      const ul = ulRef.current;
-      if (!ul) return;
-      gsap.fromTo(
-        ul.children,
-        { y: 12, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.5,
-          ease: "power3.out",
-          stagger: 0.035,
-          delay: 0.12,
-        }
-      );
+      const justOpened = !prevOpenRef.current;
+      const prevLen = prevLenRef.current;
+      const lenDiff = library.length - prevLen;
+
+      let targets: Element[] = [];
+      let delay = 0;
+      if (justOpened) {
+        targets = Array.from(ul.children);
+        delay = 0.12;
+      } else if (lenDiff > 0) {
+        // Only the newly-appended rows.
+        targets = Array.from(ul.children).slice(prevLen);
+      }
+
+      if (targets.length > 0) {
+        gsap.fromTo(
+          targets,
+          { y: 12, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.5,
+            ease: "power3.out",
+            stagger: 0.035,
+            delay,
+          }
+        );
+      }
+
+      prevLenRef.current = library.length;
+      prevOpenRef.current = open;
     },
     { dependencies: [open, library.length], scope: ulRef }
   );
 
   return (
-    <div className="relative">
-      <div
-        ref={selectorRef}
-        aria-hidden
-        className="pointer-events-none absolute rounded-md will-change-transform"
-        style={{
-          opacity: 0,
-          left: -30,
-          right: -20,
-          top: 0,
-          background: "var(--glass-active-bg)",
-          border: "1px solid var(--glass-active-border)",
-          boxShadow: "var(--glass-active-shadow)",
-          backdropFilter: "blur(24px) saturate(200%)",
-          WebkitBackdropFilter: "blur(24px) saturate(200%)",
-        }}
-      />
-      <ul ref={ulRef} className="relative flex flex-col gap-1 overflow-y-scroll">
-        {library.map((t, i) => {
-          const active = i === libraryIndex;
-          const parsed = parseName(t.name);
-          const dur = libraryDurations[t.url];
-          return (
-            <li key={t.url}>
-              <Row
-                index={i}
-                title={parsed.title}
-                artist={parsed.artist}
-                duration={dur != null ? formatTime(dur) : null}
-                active={active}
-                loading={active && isLoading}
-                onClick={() => void playLibraryIndex(i)}
-              />
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+    <ul ref={ulRef} className="relative flex flex-col gap-1">
+      {library.map((t, i) => {
+        const active = i === libraryIndex;
+        const parsed = parseName(t.name);
+        const dur = libraryDurations[t.url];
+        return (
+          <li key={t.url}>
+            <Row
+              index={i}
+              title={parsed.title}
+              artist={parsed.artist}
+              duration={dur != null ? formatTime(dur) : null}
+              active={active}
+              loading={active && isLoading}
+              onClick={() => void playLibraryIndex(i)}
+            />
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

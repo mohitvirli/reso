@@ -340,6 +340,38 @@ export function cycleRepeat(): void {
   usePlayerStore.getState().cycleRepeat();
 }
 
+/**
+ * Append a locally-picked file to the library queue. Returns the new index.
+ */
+export function addLocalFile(file: File): number {
+  const url = URL.createObjectURL(file);
+  const item = { name: file.name, url };
+  let newIndex = -1;
+  usePlayerStore.setState((s) => {
+    newIndex = s.library.length;
+    return { library: [...s.library, item], libraryLoaded: true };
+  });
+  return newIndex;
+}
+
+/**
+ * Append one or more locally-picked files to the queue and immediately
+ * start playing the first newly-added track.
+ */
+export function addLocalFilesAndPlay(files: File[]): void {
+  if (files.length === 0) return;
+  const items = files.map((f) => ({
+    name: f.name,
+    url: URL.createObjectURL(f),
+  }));
+  let firstIdx = -1;
+  usePlayerStore.setState((s) => {
+    firstIdx = s.library.length;
+    return { library: [...s.library, ...items], libraryLoaded: true };
+  });
+  if (firstIdx >= 0) void playLibraryIndex(firstIdx);
+}
+
 let libraryFetchAbort: AbortController | null = null;
 
 /** Fetch a library track by URL and load it as the current track. */

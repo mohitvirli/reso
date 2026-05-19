@@ -26,6 +26,17 @@ export function PlayerRoot() {
   const setLibraryOpen = usePlayerStore((s) => s.setLibraryOpen);
   const rootRef = React.useRef<HTMLDivElement>(null);
 
+  // Open queue by default on desktop (≥700px). Mobile stays closed.
+  // useLayoutEffect → flip before paint so master timeline picks it up.
+  React.useLayoutEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 700px)").matches
+    ) {
+      setLibraryOpen(true);
+    }
+  }, [setLibraryOpen]);
+
   // Mirrors libraryOpen but lags by the panel close anim duration so the
   // mobile chrome (theme/queue buttons) doesn't pop in over the panel while
   // it's still sliding off-screen.

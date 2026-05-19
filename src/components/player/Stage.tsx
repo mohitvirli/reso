@@ -1,11 +1,15 @@
 "use client";
 import type { AnalysisSegment } from "@/lib/analysis/client";
-import { seek } from "@/lib/player/controller";
+import { addLocalFilesAndPlay, seek } from "@/lib/player/controller";
 import { usePlayerStore } from "@/lib/player/store";
 import { formatTime } from "@/lib/util/time";
+import { Upload } from "lucide-react";
 import Image from "next/image";
 import * as React from "react";
 import { LiveWave } from "./LiveWave";
+
+const UPLOAD_ACCEPT =
+  "audio/mpeg,audio/flac,audio/wav,audio/ogg,audio/x-m4a,audio/aac,audio/mp4,audio/opus,audio/webm,.mp3,.flac,.wav,.ogg,.m4a,.aac,.opus,.webm";
 
 /**
  * Hero stack: album art + title/artist header → recessed display window
@@ -89,6 +93,7 @@ export function Stage() {
                 <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-soft">
                   {track ? "No artwork" : "Listen closer"}
                 </span>
+                {!track && <SplashUploadButton />}
               </div>
             </div>
           )}
@@ -595,3 +600,37 @@ function SeekArea({
   );
 }
 
+
+
+/**
+ * Splash-state upload trigger. Lives below the Reso wordmark when no track
+ * is loaded. Multi-select; each file gets appended to the queue end.
+ */
+function SplashUploadButton() {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line-subtle bg-paper/40 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-ink backdrop-blur transition-colors hover:bg-paper-warm/60"
+      >
+        <Upload className="size-3.5" strokeWidth={1.6} />
+        Upload files
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={UPLOAD_ACCEPT}
+        multiple
+        className="sr-only"
+        onChange={(e) => {
+          const files = e.target.files;
+          if (!files) return;
+          addLocalFilesAndPlay(Array.from(files));
+          e.target.value = "";
+        }}
+      />
+    </>
+  );
+}
