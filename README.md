@@ -1,10 +1,23 @@
 # reso
+Inspired by radio frequencies. Wanted to stray away from the usual way of displaying music, so I created this tool. Thought of some new design and how I would like to listen to music, or so to say see music?
 
+Live Demo - https://reso.clevir.li/
+
+<img width="1710" height="1112" alt="image" src="https://github.com/user-attachments/assets/bd6859f7-1e5d-4d98-8a19-6bcff87c7faa" />
+<img width="1710" height="1112" alt="image" src="https://github.com/user-attachments/assets/4af13a99-3c30-4547-9fac-03235a1c413e" />
+
+Wish I could have used Spotify and make a wrapper but we can't analyze Spotify music so have to resort to Local files.
+
+PS - Don't mind the selected demo tracks (they are from the music folder for Rekordbox, the DJ arc)
+
+
+	↓  Everything generated from AI 
+       
+## About
 A web-based music player that analyzes uploaded tracks and visualizes their structure — BPM, key, beats, downbeats, and song sections (intro / verse / chorus / bridge / outro). Built with Next.js 16 (App Router), React 19, Zustand, Tailwind 4.
 
-A distinct aesthetic: warm cream paper meets vintage hi-fi gear. Circular knobs, recessed glass display, liquid-glass playhead. The full-bleed album cover sits behind a translucent player so colour bleeds through every surface — knobs, waveform window, queue panel — without overpowering the chrome. Light / dark themes. Manrope display, Space Mono everywhere else.
-
 Reso is a frontend. Audio analysis is offloaded to a sibling Python service: **[reso-analysis](https://github.com/mohitvirli/reso-analysis)** (MLX + librosa, Apple Silicon-friendly local server).
+
 
 ## Quick start
 
