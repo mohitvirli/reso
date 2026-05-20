@@ -55,14 +55,10 @@ async function getManifest(): Promise<Map<string, AnalysisResult>> {
 
 export async function POST(request: Request): Promise<Response> {
   const contentType = request.headers.get("content-type");
-  if (!contentType?.startsWith("multipart/form-data")) {
-    return NextResponse.json(
-      { error: "Expected multipart/form-data" },
-      { status: 400 }
-    );
-  }
 
-  // Manifest hit — short-circuit, no upstream call.
+  // Manifest lookup first — runs for both bodyless probes and full uploads.
+  // The client sends a bodyless POST with x-content-hash to dodge Vercel's
+  // 4.5MB request-body cap; a hit short-circuits with no upstream call.
   const hash = request.headers.get("x-content-hash")?.toLowerCase();
   if (hash) {
     const manifest = await getManifest();
@@ -72,6 +68,17 @@ export async function POST(request: Request): Promise<Response> {
         headers: { "x-analysis-source": "baked" },
       });
     }
+  }
+
+  // Bodyless probe missed the manifest — tell the client to upload the file.
+  if (!contentType?.startsWith("multipart/form-data")) {
+    if (hash) {
+      return NextResponse.json({ error: "Manifest miss" }, { status: 404 });
+    }
+    return NextResponse.json(
+      { error: "Expected multipart/form-data" },
+      { status: 400 }
+    );
   }
 
   if (!request.body) {
