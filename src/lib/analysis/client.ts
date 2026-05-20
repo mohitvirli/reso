@@ -35,16 +35,32 @@ export async function analyzeFile(
   file: File,
   hash?: string
 ): Promise<AnalysisResult> {
+  // Bodyless manifest lookup first. Demo tracks are pre-baked, so this
+  // returns immediately without sending the file. Critical on Vercel, whose
+  // 4.5MB request-body cap would otherwise 413 large tracks at the edge
+  // before the server-side short-circuit ever runs.
+  if (hash) {
+    const hit = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "x-content-hash": hash },
+    });
+    if (hit.ok) return (await hit.json()) as AnalysisResult;
+    if (hit.status !== 404) {
+      const text = await hit.text().catch(() => "");
+      throw new Error(
+        `Analysis failed (${hit.status}): ${text || hit.statusText}`
+      );
+    }
+    // 404 = manifest miss; fall through to full upload.
+  }
+
   const fd = new FormData();
   fd.append("file", file, file.name);
-
-  const headers: Record<string, string> = {};
-  if (hash) headers["x-content-hash"] = hash;
 
   const res = await fetch("/api/analyze", {
     method: "POST",
     body: fd,
-    headers,
+    headers: hash ? { "x-content-hash": hash } : undefined,
   });
 
   if (!res.ok) {
